@@ -1,7 +1,5 @@
 # Tiller Terraform Module
 
-[![CircleCI](https://circleci.com/gh/sagikazarmark/terraform-tiller.svg?style=svg)](https://circleci.com/gh/sagikazarmark/terraform-tiller)
-
 Install [Tiller](https://docs.helm.sh/glossary/#tiller) on a Kubernetes cluster using Terraform.
 
 
@@ -12,7 +10,7 @@ Install [Tiller](https://docs.helm.sh/glossary/#tiller) on a Kubernetes cluster 
 
 ```hcl
 module "tiller" {
-  source  = "github.com/sagikazarmark/terraform-tiller"
+  source  = "github.com/bruhsb/terraform-tiller"
   version = "~> 0.1.0"
 }
 ```

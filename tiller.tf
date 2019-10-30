@@ -1,11 +1,11 @@
 variable "tiller_namespace" {
-  type        = "string"
+  type        = string
   default     = "kube-system"
   description = "The Kubernetes namespace to use to deploy Tiller."
 }
 
 variable "tiller_service_account" {
-  type        = "string"
+  type        = string
   default     = "tiller"
   description = "The Kubernetes service account to add to Tiller."
 }
@@ -16,13 +16,13 @@ variable "tiller_replicas" {
 }
 
 variable "tiller_image" {
-  type        = "string"
+  type        = string
   default     = "gcr.io/kubernetes-helm/tiller"
   description = "The image used to install Tiller."
 }
 
 variable "tiller_version" {
-  type        = "string"
+  type        = string
   default     = "v2.11.0"
   description = "The Tiller image version to install."
 }
@@ -33,36 +33,36 @@ variable "tiller_max_history" {
 }
 
 variable "tiller_net_host" {
-  type        = "string"
-  default     = ""
+  type        = string
+  default     = "true"
   description = "Install Tiller with net=host."
 }
 
 variable "tiller_node_selector" {
-  type        = "map"
+  type        = map(string)
   default     = {}
   description = "Determine which nodes Tiller can land on."
 }
 
 # See https://github.com/helm/helm/blob/master/cmd/helm/installer/install.go#L199
 resource "kubernetes_deployment" "tiller" {
-  count = "${var.rbac_enabled ? 0 : 1}"
+  count = var.rbac_enabled ? 0 : 1
 
   metadata {
     name      = "tiller-deploy"
-    namespace = "${var.tiller_namespace}"
+    namespace = var.tiller_namespace
 
-    labels {
+    labels = {
       app  = "helm"
       name = "tiller"
     }
   }
 
   spec {
-    replicas = "${var.tiller_replicas}"
+    replicas = var.tiller_replicas
 
     selector {
-      match_labels {
+      match_labels = {
         app  = "helm"
         name = "tiller"
       }
@@ -70,7 +70,7 @@ resource "kubernetes_deployment" "tiller" {
 
     template {
       metadata {
-        labels {
+        labels = {
           app  = "helm"
           name = "tiller"
         }
@@ -94,12 +94,12 @@ resource "kubernetes_deployment" "tiller" {
 
           env {
             name  = "TILLER_NAMESPACE"
-            value = "${var.tiller_namespace}"
+            value = var.tiller_namespace
           }
 
           env {
             name  = "TILLER_HISTORY_MAX"
-            value = "${var.tiller_max_history}"
+            value = var.tiller_max_history
           }
 
           liveness_probe {
@@ -123,8 +123,8 @@ resource "kubernetes_deployment" "tiller" {
           }
         }
 
-        host_network  = "${var.tiller_net_host}"
-        node_selector = "${var.tiller_node_selector}"
+        host_network  = var.tiller_net_host
+        node_selector = var.tiller_node_selector
       }
     }
   }

@@ -1,24 +1,28 @@
 # See https://github.com/helm/helm/blob/master/docs/rbac.md
 
 variable "rbac_enabled" {
-  default     = false
+  default     = true
   description = "Whether to create role-based access control resources (service account and cluster role binding)."
 }
 
+variable "depends_module" {
+  default = "data.terraform_remote_state.gcp_project"
+}
+
 resource "kubernetes_service_account" "tiller" {
-  count = "${var.rbac_enabled}"
+  count = var.rbac_enabled ? 1 : 0
 
   metadata {
     name      = "tiller"
-    namespace = "${var.tiller_namespace}"
+    namespace = var.tiller_namespace
   }
 }
 
 resource "kubernetes_cluster_role_binding" "tiller" {
-  count = "${var.rbac_enabled}"
+  count = var.rbac_enabled ? 1 : 0
 
   metadata {
-    name = "${var.tiller_service_account}"
+    name = var.tiller_service_account
   }
 
   role_ref {
@@ -29,8 +33,8 @@ resource "kubernetes_cluster_role_binding" "tiller" {
 
   subject {
     kind      = "ServiceAccount"
-    name      = "${kubernetes_service_account.tiller.metadata.0.name}"
-    namespace = "${var.tiller_namespace}"
+    name      = kubernetes_service_account.tiller[0].metadata[0].name
+    namespace = var.tiller_namespace
 
     # See https://github.com/terraform-providers/terraform-provider-kubernetes/issues/204
     api_group = ""
@@ -40,23 +44,25 @@ resource "kubernetes_cluster_role_binding" "tiller" {
 # See https://github.com/helm/helm/blob/master/cmd/helm/installer/install.go#L199
 # See https://github.com/terraform-providers/terraform-provider-kubernetes/issues/38#issuecomment-318581203
 resource "kubernetes_deployment" "tiller_with_rbac" {
-  count = "${var.rbac_enabled ? 1 : 0}"
+  count = var.rbac_enabled ? 1 : 0
+
+  depends_on = ["kubernetes_service_account.tiller"]
 
   metadata {
     name      = "tiller-deploy"
-    namespace = "${var.tiller_namespace}"
+    namespace = var.tiller_namespace
 
-    labels {
+    labels = {
       app  = "helm"
       name = "tiller"
     }
   }
 
   spec {
-    replicas = "${var.tiller_replicas}"
+    replicas = var.tiller_replicas
 
     selector {
-      match_labels {
+      match_labels = {
         app  = "helm"
         name = "tiller"
       }
@@ -64,14 +70,14 @@ resource "kubernetes_deployment" "tiller_with_rbac" {
 
     template {
       metadata {
-        labels {
+        labels = {
           app  = "helm"
           name = "tiller"
         }
       }
 
       spec {
-        service_account_name = "${kubernetes_service_account.tiller.metadata.0.name}"
+        service_account_name = kubernetes_service_account.tiller[0].metadata[0].name
 
         container {
           name              = "tiller"
@@ -81,21 +87,23 @@ resource "kubernetes_deployment" "tiller_with_rbac" {
           port {
             name           = "tiller"
             container_port = 44134
+            host_port      = 44134
           }
 
           port {
             name           = "http"
             container_port = 44135
+            host_port      = 44135
           }
 
           env {
             name  = "TILLER_NAMESPACE"
-            value = "${var.tiller_namespace}"
+            value = var.tiller_namespace
           }
 
           env {
             name  = "TILLER_HISTORY_MAX"
-            value = "${var.tiller_max_history}"
+            value = var.tiller_max_history
           }
 
           liveness_probe {
@@ -121,20 +129,20 @@ resource "kubernetes_deployment" "tiller_with_rbac" {
           # See https://github.com/terraform-providers/terraform-provider-kubernetes/issues/38#issuecomment-318581203
           volume_mount {
             mount_path = "/var/run/secrets/kubernetes.io/serviceaccount"
-            name       = "${kubernetes_service_account.tiller.default_secret_name}"
+            name       = kubernetes_service_account.tiller[0].default_secret_name
             read_only  = true
           }
         }
 
-        host_network  = "${var.tiller_net_host}"
-        node_selector = "${var.tiller_node_selector}"
+        host_network  = var.tiller_net_host
+        node_selector = var.tiller_node_selector
 
         # See https://github.com/terraform-providers/terraform-provider-kubernetes/issues/38#issuecomment-318581203
         volume {
-          name = "${kubernetes_service_account.tiller.default_secret_name}"
+          name = kubernetes_service_account.tiller[0].default_secret_name
 
           secret {
-            secret_name = "${kubernetes_service_account.tiller.default_secret_name}"
+            secret_name = kubernetes_service_account.tiller[0].default_secret_name
           }
         }
       }
