@@ -1,8 +1,6 @@
 # See https://github.com/helm/helm/blob/master/docs/rbac.md
 
 
-variable "depends_module" {}
-
 variable "rbac_enabled" {
   default     = true
   description = "Whether to create role-based access control resources (service account and cluster role binding)."
