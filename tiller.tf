@@ -1,3 +1,5 @@
+variable "depends_module" {}
+
 variable "tiller_namespace" {
   type        = string
   default     = "kube-system"
