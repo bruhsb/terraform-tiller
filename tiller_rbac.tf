@@ -43,7 +43,7 @@ resource "kubernetes_cluster_role_binding" "tiller" {
 resource "kubernetes_deployment" "tiller_with_rbac" {
   count = var.rbac_enabled ? 1 : 0
 
-  depends_on = ["kubernetes_service_account.tiller"]
+  depends_on = [kubernetes_service_account.tiller]
 
   metadata {
     name      = "tiller-deploy"

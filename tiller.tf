@@ -1,4 +1,6 @@
-variable "depends_module" {}
+variable "depends_module" {
+  default = ""
+}  #TODO - Create docs
 
 variable "tiller_namespace" {
   type        = string
